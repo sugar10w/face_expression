@@ -25,8 +25,8 @@ public:
             std::cout << "[WARNING] failed to open camera " << camera_id << std::endl;
         else {
             undistort_enabled = loadConfigFile(config_file_name);
-            capture.set(CV_CAP_PROP_FRAME_WIDTH, width);
-            capture.set(CV_CAP_PROP_FRAME_HEIGHT, height);
+            capture.set(CV_CAP_PROP_FRAME_WIDTH, 640);
+            capture.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
         }
     }
 

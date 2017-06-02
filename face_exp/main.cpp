@@ -1,102 +1,98 @@
 #include<opencv2/opencv.hpp>
 
+#include <queue>
 #include <vector>
 #include <string>
 #include <iostream>
 
 #include "camera/camera_opencv.hpp"
 #include "stasm_lib.h"
+#include "stasm_face_model.hpp"
 
 using namespace std;
 using namespace cv;
 
-// StasmFaceModel.hpp -----
 
-struct FacePoints {
-    bool valid;
-    std::vector<cv::Point2f> point_list; 
-};
+// simple streak pass
+template<typename T> class SimpleStreakPass {
 
-class StasmFaceModel {
 public:
-
-    StasmFaceModel(std::string filename) 
-    : filename_(filename)
-    { }
-
-    FacePoints getFacePoints(cv::Mat raw) {
-        FacePoints fp;
-        cv::Mat img;
-
-        fp.valid = false;
-
-        if (raw.channels() == 3)
-            cv::cvtColor(raw, img, CV_BGR2GRAY);
-        else if (raw.channels() == 1)
-            img = raw.clone();
-        else return fp;
-
-        int foundface;
-        float landmarks[2 * stasm_NLANDMARKS];
-        if (!stasm_search_single(&foundface, landmarks, (const char*)img.data, img.cols, img.rows, "", filename_.c_str())) {
-            std::cout << "[Error] stasm_search_single: " << stasm_lasterr() << std::endl;
-            return fp;
-        }
-
-        if (!foundface) {
-            std::cout << "[Error] stasm_search_single: no face detected." << std::endl;
-            return fp;
-        }
-
-        fp.valid = true;
-        stasm_force_points_into_image(landmarks, img.cols, img.rows);
-        for (size_t i = 0; i < stasm_NLANDMARKS; ++i) {
-            fp.point_list.push_back(cv::Point2f(landmarks[i*2], landmarks[i*2+1]));
-        }
-        return fp;
-
+    SimpleStreakPass(int n, T t) : n_(n), p_(0) {
+        list_.resize(n, t);
     }
 
+    bool add(T t) {
+        list_[p_] = t;
+        ++ p_;
+        p_ %= n_;
+
+        for (T& tt : list_) if (tt != list_[0]) return false;
+        return true;
+    }
 
 private:
-    std::string filename_;
-
+    int n_;
+    int p_;
+    vector<T> list_;
 };
 
-// ----
 
+// main
 int main() {
-    Camera camera(1);
+    Camera camera(0);
     StasmFaceModel face_model("../data");
 
 
     bool running_flag = true;
+    bool point_flag = true;
+
+    SimpleStreakPass<int> streak_pass(5, Unknown);
+    FaceExpression f = Unknown;
+
+    VideoWriter video_writer("VideoTest.avi", CV_FOURCC('M', 'J', 'P', 'G'), 30.0, Size(640, 480)); 
 
     while (running_flag) {
 
         Mat img = camera.getFrame();
         
+        flip(img, img, 1);
 
         FacePoints fp = face_model.getFacePoints(img);
-        
+
         if (fp.valid) {
-            for (cv::Point2f& p : fp.point_list) 
-                circle(img, p, 5, Scalar(255, 0, 0), 4, 4, 0);
-            circle(img, Point2f(0,0), 5, Scalar(255, 0, 0));
+            if (point_flag)
+                for (cv::Point2f& p : fp.point_list) 
+                    circle(img, p, 1, Scalar(255, 0, 0), -1, 8, 0);
+
+            FaceExpression curr_f = fp.getFaceExpression();
+
+            if (streak_pass.add(curr_f)) f = curr_f;
+            std::string str = FacePoints::getFaceExpressionString(f);
+            Scalar color = FacePoints::getFaceExpressionColor(f);
+
+            Point2f p = fp.point_list[14];
+            p.x -= 50;
+
+            putText(img, str, p, 0, 1, color, 2);
+
         }
 
         imshow("img", img);
+
+        video_writer << img;
+
         char c = waitKey(1);
         
         switch (c) {
         case 'q':
             running_flag = false; break;
         case ' ':
-            imwrite("test.png", img); break;
+            point_flag = !point_flag; break;
         default:
             break;
         }
 
     }
+
 
 }
