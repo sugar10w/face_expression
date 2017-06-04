@@ -234,5 +234,5 @@ $RECYCLE.BIN/
 
 # ======
 # My file
-
+*.avi
 /opencv2.props
