@@ -44,7 +44,7 @@ int main() {
 
 
     bool running_flag = true;
-    bool point_flag = true;
+    bool point_flag = false;
 
     SimpleStreakPass<int> streak_pass(5, Unknown);
     FaceExpression f = Unknown;
@@ -71,9 +71,16 @@ int main() {
             Scalar color = FacePoints::getFaceExpressionColor(f);
 
             Point2f p = fp.point_list[14];
-            p.x -= 50;
+
+            p.y -= 30;
+			p.x -= 50;
 
             putText(img, str, p, 0, 1, color, 2);
+
+			line(img, fp.bound_point[0], fp.bound_point[1], color, 2);
+			line(img, fp.bound_point[0], fp.bound_point[2], color, 2);
+			line(img, fp.bound_point[1], fp.bound_point[3], color, 2);
+			line(img, fp.bound_point[2], fp.bound_point[3], color, 2);
 
         }
 

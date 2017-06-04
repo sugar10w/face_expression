@@ -21,7 +21,9 @@ enum FaceExpression {
 
 struct FacePoints {
     bool valid;
-    std::vector<cv::Point2f> point_list; 
+    std::vector<cv::Point2f> point_list;
+	std::vector<cv::Point2f> bound_point;
+	
 
     FaceExpression getFaceExpression() {
         if (!valid) return Unknown;
@@ -31,12 +33,12 @@ struct FacePoints {
         double nose_width =  cv::norm(point_list[58] - point_list[54]);
         double brow_distance = cv::norm(point_list[21] - point_list[22]);
 
-        std::cout << mouth_width / nose_width << "\t" 
-            << brow_distance / nose_width << std::endl;;
+        std::cout <<"[mouth width] "<< mouth_width / nose_width << "\t" 
+            <<" [brow width]"<< brow_distance / nose_width << std::endl;;
 
 
         if (mouth_width > nose_width * 1.3) return Happy;
-        if (mouth_width < nose_width * 1.1 && mouth_height > mouth_width * 0.55) return Kiss;
+        if (mouth_width < nose_width * 1.1 && mouth_height > mouth_width * 0.40) return Kiss;
         if (brow_distance < nose_width * 0.65) return Nervous;
 
         return Calm;
@@ -121,6 +123,10 @@ public:
         for (size_t i = 0; i < stasm_NLANDMARKS; ++i) {
             fp.point_list.push_back(cv::Point2f(landmarks[i*2], landmarks[i*2+1]));
         }
+		fp.bound_point.push_back(cv::Point2f(fp.point_list[1].x, fp.point_list[14].y));
+		fp.bound_point.push_back(cv::Point2f(fp.point_list[11].x, fp.point_list[14].y));
+		fp.bound_point.push_back(cv::Point2f(fp.point_list[1].x, fp.point_list[6].y));
+		fp.bound_point.push_back(cv::Point2f(fp.point_list[11].x, fp.point_list[6].y));
         return fp;
 
     }
