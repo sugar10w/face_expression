@@ -11,7 +11,7 @@
 #include "stasm_lib.h"
 
 
-enum FaceExpression {
+enum FaceExpression {//定义四种表情
     Calm,
     Happy,      // mouth
     Kiss,       // mouth
@@ -21,30 +21,30 @@ enum FaceExpression {
 
 struct FacePoints {
     bool valid;
-    std::vector<cv::Point2f> point_list;
-	std::vector<cv::Point2f> bound_point;
+    std::vector<cv::Point2f> point_list;//77个特征点
+	std::vector<cv::Point2f> bound_point;//4个边界点
 	
 
     FaceExpression getFaceExpression() {
         if (!valid) return Unknown;
 
-        double mouth_width =  cv::norm(point_list[59] - point_list[65]);
-        double mouth_height =  cv::norm(point_list[62] - point_list[74]);
-        double nose_width =  cv::norm(point_list[58] - point_list[54]);
-        double brow_distance = cv::norm(point_list[21] - point_list[22]);
+        double mouth_width =  cv::norm(point_list[59] - point_list[65]);//嘴唇宽度
+        double mouth_height =  cv::norm(point_list[62] - point_list[74]);//嘴唇高度
+        double nose_width =  cv::norm(point_list[58] - point_list[54]);//鼻子宽度
+        double brow_distance = cv::norm(point_list[21] - point_list[22]);//眉毛距离
 
         std::cout <<"[mouth width] "<< mouth_width / nose_width << "\t" 
             <<" [brow width]"<< brow_distance / nose_width << std::endl;;
 
 
-        if (mouth_width > nose_width * 1.3) return Happy;
+        if (mouth_width > nose_width * 1.25) return Happy;//四个判定，详见报告中流程图
         if (mouth_width < nose_width * 1.1 && mouth_height > mouth_width * 0.40) return Kiss;
         if (brow_distance < nose_width * 0.65) return Nervous;
 
         return Calm;
     }
 
-    static cv::Scalar getFaceExpressionColor(FaceExpression f) {
+    static cv::Scalar getFaceExpressionColor(FaceExpression f) {//不同的表情代表不同的颜色
         switch (f)
         {
         case Calm:
@@ -65,7 +65,7 @@ struct FacePoints {
         }
     }
 
-    static std::string getFaceExpressionString(FaceExpression f) {
+    static std::string getFaceExpressionString(FaceExpression f) {//输出每个表情的字符串
         switch (f)
         {
         case Calm:
@@ -94,7 +94,7 @@ public:
     : filename_(filename)
     { }
 
-    FacePoints getFacePoints(cv::Mat raw) {
+    FacePoints getFacePoints(cv::Mat raw) {//读取stasm特征点
         FacePoints fp;
         cv::Mat img;
 
@@ -123,7 +123,7 @@ public:
         for (size_t i = 0; i < stasm_NLANDMARKS; ++i) {
             fp.point_list.push_back(cv::Point2f(landmarks[i*2], landmarks[i*2+1]));
         }
-		fp.bound_point.push_back(cv::Point2f(fp.point_list[1].x, fp.point_list[14].y));
+		fp.bound_point.push_back(cv::Point2f(fp.point_list[1].x, fp.point_list[14].y));//以最外的四个点的x/y值作为识别边界点
 		fp.bound_point.push_back(cv::Point2f(fp.point_list[11].x, fp.point_list[14].y));
 		fp.bound_point.push_back(cv::Point2f(fp.point_list[1].x, fp.point_list[6].y));
 		fp.bound_point.push_back(cv::Point2f(fp.point_list[11].x, fp.point_list[6].y));

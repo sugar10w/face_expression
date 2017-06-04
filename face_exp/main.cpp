@@ -13,7 +13,7 @@ using namespace std;
 using namespace cv;
 
 
-// simple streak pass
+// 队列模版类，通过该队列实现5张连续帧输出同一表情时才更换显示表情
 template<typename T> class SimpleStreakPass {
 
 public:
@@ -53,45 +53,47 @@ int main() {
 
     while (running_flag) {
 
-        Mat img = camera.getFrame();
+        Mat img = camera.getFrame();//读入当前帧
         
-        flip(img, img, 1);
+        flip(img, img, 1);//因为读入图片是反向的，所以再次水平翻转
 
-        FacePoints fp = face_model.getFacePoints(img);
+        FacePoints fp = face_model.getFacePoints(img);//读入FacePoints，详细见stasm/stasm_face_model.hpp
 
-        if (fp.valid) {
+        if (fp.valid) {//在识别到人脸的情况下
             if (point_flag)
                 for (cv::Point2f& p : fp.point_list) 
-                    circle(img, p, 1, Scalar(255, 0, 0), -1, 8, 0);
+                    circle(img, p, 1, Scalar(255, 0, 0), -1, 8, 0);//显示特征点
 
-            FaceExpression curr_f = fp.getFaceExpression();
+            FaceExpression curr_f = fp.getFaceExpression();//读取表情，详见stasm/stasm_face_model.hpp
 
-            if (streak_pass.add(curr_f)) f = curr_f;
+            if (streak_pass.add(curr_f)) f = curr_f;//防抖处理
             std::string str = FacePoints::getFaceExpressionString(f);
-            Scalar color = FacePoints::getFaceExpressionColor(f);
+            Scalar color = FacePoints::getFaceExpressionColor(f);//不同的表情对应不同的颜色
 
-            Point2f p = fp.point_list[14];
+            Point2f p = fp.point_list[14];//头顶特征点，在此显示表情的文本
 
             p.y -= 30;
 			p.x -= 50;
 
-            putText(img, str, p, 0, 1, color, 2);
-
+			
+            putText(img, str, p, 0, 1, color, 2);//显示文本和边框
 			line(img, fp.bound_point[0], fp.bound_point[1], color, 2);
 			line(img, fp.bound_point[0], fp.bound_point[2], color, 2);
 			line(img, fp.bound_point[1], fp.bound_point[3], color, 2);
 			line(img, fp.bound_point[2], fp.bound_point[3], color, 2);
+			
 
         }
 
         imshow("img", img);
 
-        video_writer << img;
+        video_writer << img;//写入视频
 
         char c = waitKey(1);
         
-        switch (c) {
+        switch (c) {//按q时退出，按空格时显示/隐藏特征点
         case 'q':
+		case 'Q':
             running_flag = false; break;
         case ' ':
             point_flag = !point_flag; break;
